@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Správce sdílení složek</title>
+    <title>Projektový Checklist</title>
+    <!-- Trimble Connect Workspace API klient -->
     <script src="https://components.connect.trimble.com/trimble-connect-workspace-api/index.js"></script>
     <style>
         body {
@@ -12,93 +13,232 @@
             padding: 16px;
             background-color: #f4f5f7;
             color: #333;
+            box-sizing: border-box;
         }
-        h2 { font-size: 18px; margin-top: 0; color: #0066cc; }
-        .card { background: #fff; padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 16px; }
-        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; }
-        input[type="date"] { width: 100%; padding: 8px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        .checkbox-label { font-weight: normal; display: flex; align-items: center; margin-bottom: 12px; cursor: pointer; }
-        .checkbox-label input { margin-right: 8px; }
-        button { background-color: #0066cc; color: white; border: none; padding: 10px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%; }
-        button:hover { background-color: #0052a3; }
-        .folder-info { font-size: 13px; color: #555; background: #eef2f7; padding: 8px; border-radius: 4px; margin-bottom: 12px; word-break: break-all; }
-        .result-box { margin-top: 16px; padding: 12px; background: #e6f4ea; border: 1px solid #137333; border-radius: 4px; display: none; }
-        .result-box input { width: 100%; padding: 6px; margin-top: 6px; box-sizing: border-box; }
+        h2 {
+            font-size: 16px;
+            margin-top: 0;
+            color: #0066cc;
+            margin-bottom: 12px;
+        }
+        .card {
+            background: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 12px;
+        }
+        .input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        button {
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        button:hover {
+            background-color: #0052a3;
+        }
+        .danger-btn {
+            background-color: #d93838;
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+        .danger-btn:hover {
+            background-color: #b52b2b;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: calc(100vh - 180px);
+            overflow-y: auto;
+        }
+        li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+        li:last-child {
+            border-bottom: none;
+        }
+        .task-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            word-break: break-word;
+        }
+        input[type="checkbox"] {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+        .completed span {
+            text-decoration: line-through;
+            color: #888;
+        }
+        .status-bar {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
 
-    <h2>Sdílení složky mimo Trimble Connect</h2>
+    <h2>Kontrolní seznam úkolů</h2>
 
     <div class="card">
-        <label>Stav:</label>
-        <div id="folder-name" class="folder-info">Připojuji se k Trimble Connect...</div>
+        <div class="input-group">
+            <input type="text" id="task-input" placeholder="Zadejte nový úkol..." onkeypress="handleKeyPress(event)">
+            <button onclick="addTask()">Přidat</button>
+        </div>
+        <div id="status-bar" class="status-bar">Splněno: 0 / 0</div>
     </div>
 
-    <div class="card">
-        <label for="expiry-date">Platnost odkazu do:</label>
-        <input type="date" id="expiry-date">
-
-        <label class="checkbox-label">
-            <input type="checkbox" id="allow-download" checked>
-            Umožnit stažení souborů
-        </label>
-
-        <label class="checkbox-label">
-            <input type="checkbox" id="latest-version" checked>
-            Vždy zobrazovat nejnovější verzi souborů
-        </label>
-
-        <button id="generate-btn" onclick="generateShareLink()">Vygenerovat veřejný odkaz</button>
-
-        <div id="result" class="result-box">
-            <strong>Odkaz úspěšně vytvořen:</strong>
-            <input type="text" id="share-url" readonly onclick="this.select()">
-            <div style="font-size: 11px; color: #137333; margin-top: 4px;">Odkaz je připraven ke kopírování. Příjemce se nemusí přihlašovat.</div>
-        </div>
+    <div class="card" style="padding: 8px;">
+        <ul id="task-list">
+            <!-- Sem se dynamicky generují úkoly -->
+        </ul>
     </div>
 
     <script>
         let api = null;
+        let tasks = [];
 
         window.addEventListener('DOMContentLoaded', async () => {
             try {
-                // Inicializace pomocí WorkspaceAPI s callbackem pro události
-                if (typeof WorkspaceAPI !== 'undefined' && WorkspaceAPI.connect) {
-                    api = await WorkspaceAPI.connect(window.parent, (event, args) => {
-                        console.log("TC Event:", event, args);
-                    });
-                } else if (typeof ConnectWorkspace !== 'undefined' && ConnectWorkspace.connect) {
-                    api = await ConnectWorkspace.connect(window.parent);
-                } else {
-                    throw new Error(" WorkspaceAPI knihovna není dostupná.");
+                const clientLib = window.WorkspaceAPI || window.ConnectWorkspace || window.TrimbleConnectWorkspace;
+                if (clientLib && typeof clientLib.connect === 'function') {
+                    api = await clientLib.connect(window.parent);
                 }
-
-                document.getElementById('folder-name').innerText = "Připojeno úspěšně. Rozšíření je aktivní.";
-
-                const defaultDate = new Date();
-                defaultDate.setDate(defaultDate.getDate() + 14);
-                document.getElementById('expiry-date').value = defaultDate.toISOString().split('T')[0];
-
             } catch (error) {
-                console.error("Chyba inicializace:", error);
-                document.getElementById('folder-name').innerText = "Chyba připojení: " + error.message;
+                console.warn("Běží mimo Trimble Connect nebo API není dostupné:", error);
             }
+
+            loadTasks();
+            renderTasks();
         });
 
-        function generateShareLink() {
-            const expiry = document.getElementById('expiry-date').value;
-            const allowDownload = document.getElementById('allow-download').checked;
-            const latestVersion = document.getElementById('latest-version').checked;
+        function loadTasks() {
+            const saved = localStorage.getItem('tc_checklist_tasks');
+            if (saved) {
+                try {
+                    tasks = JSON.parse(saved);
+                } catch (e) {
+                    tasks = [];
+                }
+            } else {
+                // Výchozí ukázkové úkoly při prvním spuštění
+                tasks = [
+                    { id: 1, text: "Zkontrolovat kolize v 3D modelu", completed: false },
+                    { id: 2, text: "Ověřit aktuální verze výkresů", completed: true },
+                    { id: 3, text: "Schválit revizi s klientem", completed: false }
+                ];
+            }
+        }
 
-            const uniqueToken = Math.random().toString(36).substring(2, 12);
-            const dummyExternalUrl = `https://connect.trimble.com/embed/share/${uniqueToken}?expires=${expiry}&download=${allowDownload ? 1 : 0}&latest=${latestVersion ? 1 : 0}`;
+        function saveTasks() {
+            localStorage.setItem('tc_checklist_tasks', JSON.stringify(tasks));
+        }
 
-            const resultBox = document.getElementById('result');
-            const urlInput = document.getElementById('share-url');
-            
-            urlInput.value = dummyExternalUrl;
-            resultBox.style.display = 'block';
+        function addTask() {
+            const input = document.getElementById('task-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            tasks.push({
+                id: Date.now(),
+                text: text,
+                completed: false
+            });
+
+            input.value = '';
+            saveAndRender();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                addTask();
+            }
+        }
+
+        function toggleTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                saveAndRender();
+            }
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            saveAndRender();
+        }
+
+        function saveAndRender() {
+            saveTasks();
+            renderTasks();
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('task-list');
+            list.innerHTML = '';
+
+            if (tasks.length === 0) {
+                list.innerHTML = '<li style="color: #888; justify-content: center; padding: 12px;">Seznam je prázdný.</li>';
+                document.getElementById('status-bar').innerText = 'Splněno: 0 / 0';
+                return;
+            }
+
+            let completedCount = 0;
+
+            tasks.forEach(task => {
+                if (task.completed) completedCount++;
+
+                const li = document.createElement('li');
+                if (task.completed) li.classList.add('completed');
+
+                li.innerHTML = `
+                    <div class="task-content">
+                        <input type="checkbox" ${task.completed ? 'checked' : ''} onclick="toggleTask(${task.id})">
+                        <span>${escapeHtml(task.text)}</span>
+                    </div>
+                    <button class="danger-btn" onclick="deleteTask(${task.id})">Smazat</button>
+                `;
+                list.appendChild(li);
+            });
+
+            document.getElementById('status-bar').innerText = `Splněno: ${completedCount} / ${tasks.length}`;
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
         }
     </script>
 </body>
