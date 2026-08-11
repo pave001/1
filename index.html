@@ -128,18 +128,16 @@
         // Inicializace Trimble Connect Workspace API
         window.addEventListener('DOMContentLoaded', async () => {
             try {
-                // Správné připojení přes WorkspaceAPI
-                if (typeof WorkspaceAPI !== 'undefined' && WorkspaceAPI.connect) {
-                    api = await WorkspaceAPI.connect(window.parent, (event, args) => {
+                // Správné připojení přes WorkspaceAPI podle oficiální dokumentace
+                api = await WorkspaceAPI.connect(
+                    window.parent, 
+                    (event, args) => {
                         console.info("Událost z Trimble Connect:", event, args);
-                    });
-                } else if (typeof ConnectWorkspace !== 'undefined' && ConnectWorkspace.connect) {
-                    api = await ConnectWorkspace.connect(window.parent);
-                } else {
-                    throw new Error("WorkspaceAPI objekt nebyl nalezen v globálním rozsahu.");
-                }
+                    },
+                    30000
+                );
                 
-                // Získání informací o projektu a kontextu
+                // Získání informací o kontextu projektu
                 const context = await api.project.getCurrentContext();
                 if (context && context.folder) {
                     currentFolder = context.folder;
