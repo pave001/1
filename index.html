@@ -31,8 +31,8 @@
     <h2>Sdílení složky mimo Trimble Connect</h2>
 
     <div class="card">
-        <label>Stav připojení:</label>
-        <div id="folder-name" class="folder-info">Inicializuji a ověřuji oprávnění...</div>
+        <label>Stav:</label>
+        <div id="folder-name" class="folder-info">Připojuji se k Trimble Connect...</div>
     </div>
 
     <div class="card">
@@ -60,37 +60,28 @@
 
     <script>
         let api = null;
-        let authToken = null;
 
         window.addEventListener('DOMContentLoaded', async () => {
             try {
-                const clientLib = window.WorkspaceAPI || window.ConnectWorkspace || window.TrimbleConnectWorkspace;
-                if (!clientLib || typeof clientLib.connect !== 'function') {
-                    throw new Error("Knihovna WorkspaceAPI nebyla načtena.");
-                }
-
-                api = await clientLib.connect(window.parent);
-                
-                // Vyžádání oprávnění k tokenu pro přístup k projektu
-                try {
-                    authToken = await api.extension.getPermission("accesstoken");
-                } catch (permErr) {
-                    console.warn("Uživatel neschválil token nebo již běží:", permErr);
-                }
-
-                const projectInfo = await api.project.getCurrentProject();
-                if (projectInfo) {
-                    document.getElementById('folder-name').innerText = `Připojeno k projektu: ${projectInfo.name || "Neznámý"}`;
+                // Inicializace pomocí WorkspaceAPI s callbackem pro události
+                if (typeof WorkspaceAPI !== 'undefined' && WorkspaceAPI.connect) {
+                    api = await WorkspaceAPI.connect(window.parent, (event, args) => {
+                        console.log("TC Event:", event, args);
+                    });
+                } else if (typeof ConnectWorkspace !== 'undefined' && ConnectWorkspace.connect) {
+                    api = await ConnectWorkspace.connect(window.parent);
                 } else {
-                    document.getElementById('folder-name').innerText = "Připojeno k Trimble Connect (projekt nerozpoznán)";
+                    throw new Error(" WorkspaceAPI knihovna není dostupná.");
                 }
+
+                document.getElementById('folder-name').innerText = "Připojeno úspěšně. Rozšíření je aktivní.";
 
                 const defaultDate = new Date();
                 defaultDate.setDate(defaultDate.getDate() + 14);
                 document.getElementById('expiry-date').value = defaultDate.toISOString().split('T')[0];
 
             } catch (error) {
-                console.error("Chyba při inicializaci:", error);
+                console.error("Chyba inicializace:", error);
                 document.getElementById('folder-name').innerText = "Chyba připojení: " + error.message;
             }
         });
