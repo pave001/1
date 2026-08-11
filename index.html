@@ -128,21 +128,28 @@
         // Inicializace Trimble Connect Workspace API
         window.addEventListener('DOMContentLoaded', async () => {
             try {
-                api = await ConnectWorkspace.ConnectWorkspace.create();
+                // Správné připojení přes WorkspaceAPI
+                if (typeof WorkspaceAPI !== 'undefined' && WorkspaceAPI.connect) {
+                    api = await WorkspaceAPI.connect(window.parent, (event, args) => {
+                        console.info("Událost z Trimble Connect:", event, args);
+                    });
+                } else if (typeof ConnectWorkspace !== 'undefined' && ConnectWorkspace.connect) {
+                    api = await ConnectWorkspace.connect(window.parent);
+                } else {
+                    throw new Error("WorkspaceAPI objekt nebyl nalezen v globálním rozsahu.");
+                }
                 
-                // Získání informací o vybrané složce v projektu
+                // Získání informací o projektu a kontextu
                 const context = await api.project.getCurrentContext();
                 if (context && context.folder) {
                     currentFolder = context.folder;
                     document.getElementById('folder-name').innerText = currentFolder.name || "Kořenová složka";
-                    
-                    // Načtení obsahu složky
                     loadFolderContents(currentFolder.id);
                 } else {
                     document.getElementById('folder-name').innerText = "Kořenová složka projektu";
                 }
 
-                // Nastavení výchozího data expirace na 14 dní dopředu
+                // Výchozí datum expirace na 14 dní dopředu
                 const defaultDate = new Date();
                 defaultDate.setDate(defaultDate.getDate() + 14);
                 document.getElementById('expiry-date').value = defaultDate.toISOString().split('T')[0];
@@ -178,8 +185,6 @@
                 return;
             }
 
-            // Simulace vygenerování bezpečného URL odkazu pro externí prohlížeč Trimble Connect
-            // V reálné produkční aplikaci zde proběhne volání vašeho serveru na Trimble Connect Shares REST API.
             const uniqueToken = Math.random().toString(36).substring(2, 12);
             const dummyExternalUrl = `https://connect.trimble.com/embed/share/${uniqueToken}?expires=${expiry}&download=${allowDownload ? 1 : 0}&latest=${latestVersion ? 1 : 0}`;
 
