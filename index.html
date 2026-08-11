@@ -135,13 +135,13 @@
 
                 api = await clientLib.connect(window.parent);
                 
-                const context = await api.project.getCurrentContext();
-                if (context && context.folder) {
-                    currentFolder = context.folder;
-                    document.getElementById('folder-name').innerText = currentFolder.name || "Kořenová složka";
-                    loadFolderContents(currentFolder.id);
+                // Získání informací o aktuálním projektu
+                const projectInfo = await api.project.getCurrentProject();
+                if (projectInfo) {
+                    document.getElementById('folder-name').innerText = `Projekt: ${projectInfo.name || "Neznámý"} (Kořenová složka)`;
+                    currentFolder = { id: projectInfo.rootFolderId || 'root', name: projectInfo.name };
                 } else {
-                    document.getElementById('folder-name').innerText = "Kořenová složka projektu";
+                    document.getElementById('folder-name').innerText = "Projekt nenalezen";
                 }
 
                 const defaultDate = new Date();
@@ -153,21 +153,6 @@
                 document.getElementById('folder-name').innerText = "Chyba: " + error.message;
             }
         });
-
-        async function loadFolderContents(folderId) {
-            try {
-                const contents = await api.project.getFolderContents(folderId);
-                const container = document.getElementById('folder-contents');
-                if (contents && contents.length > 0) {
-                    const names = contents.map(item => item.name).join(', ');
-                    container.innerText = `Obsah: ${names}`;
-                } else {
-                    container.innerText = "Složka je prázdná.";
-                }
-            } catch (e) {
-                console.error("Nelze načíst obsah složky", e);
-            }
-        }
 
         function generateShareLink() {
             const expiry = document.getElementById('expiry-date').value;
