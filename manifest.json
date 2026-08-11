@@ -1,7 +1,6 @@
 {
     "title": "Správce sdílení složek",
-    "url": "https://pave001.github.io/1/index.html",
-    "icon": "https://pave001.github.io/1/icon.png",
-    "description": "Vytváření bezpečných externích odkazů pro složky s nastavením platnosti, stažení a verzování.",
+    "url": "https://vas-uzivatel.github.io/tc-manifest/index.html",
+    "description": "Vytváření bezpečných externích odkazů pro složky.",
     "enabled": true
 }
