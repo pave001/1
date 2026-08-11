@@ -1,24 +1,7 @@
 {
-  "manifestVersion": "1.0",
-  "id": "tc-folder-share-extension",
-  "name": {
-    "en": "Folder Share Manager",
-    "cs": "Správce sdílení složek"
-  },
-  "description": {
-    "en": "Create secure external share links for folders with expiration and download controls.",
-    "cs": "Vytváření bezpečných externích odkazů pro složky s nastavením platnosti a stažení."
-  },
-  "version": "1.0.0",
-  "author": "Váš Tým",
-  "type": "web-extension",
-  "entryPoint": "https://moje-server-aplikace.cz/index.html",
-  "permissions": [
-    "project.read",
-    "file.read"
-  ],
-  "ui": {
-    "location": "sidebar",
-    "icon": "https://moje-server-aplikace.cz/icon.png"
-  }
+    "title": "Správce sdílení složek",
+    "url": "https://vas-uzivatel.github.io/tc-folder-share/index.html",
+    "icon": "https://vas-uzivatel.github.io/tc-folder-share/icon.png",
+    "description": "Vytváření bezpečných externích odkazů pro složky s nastavením platnosti, stažení a verzování.",
+    "enabled": true
 }
