@@ -2,5 +2,8 @@
     "title": "Správce sdílení složek",
     "url": "https://pave001.github.io/1/index.html",
     "description": "Vytváření bezpečných externích odkazů pro složky.",
-    "enabled": true
+    "enabled": true,
+    "ui": {
+        "location": "sidebar"
+    }
 }
